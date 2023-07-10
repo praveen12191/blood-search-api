@@ -82,37 +82,25 @@ default_connection = connect(db='bloodsearch', host="mongodb+srv://praveen:qwert
 
 app = FastAPI()
 
-class Add(Document):
-    name = StringField(required=True)
+origins = [
+    "http://localhost",
+    "http://localhost:3000",
+    "http://localhost:8080",
+]
 
-class Added(BaseModel):
-    name: str
-
-
-@app.post('/add')
-async def add(value: Added):
-    obj = Add(name=value.name)
-    obj.save()
-    return
-
-class Fun(Document):
-    name1 : StringField(required=True)
-
-class Funed(BaseModel):
-    name1 : str 
-
-@app.post('/pos')
-async def funn(val: Funed):
-    obj = Fun(name=val.name1)
-    obj.save()
-    return
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 class Patients(Document):
-    name : StringField(required=True)
-    age : StringField(required=True)
-    group : StringField(required=True)
-    place : StringField(required=True)
-    phone : StringField(required=True)
+    name = StringField(required=True)
+    age = StringField(required=True)
+    group = StringField(required=True)
+    place = StringField(required=True)
+    phone = StringField(required=True)
     patient_id = StringField(required=True)
 
 class PatientsDetails(BaseModel):
@@ -131,20 +119,6 @@ class Check(BaseModel):
     id  : object
     pin : str 
 
-origins = [
-    "http://localhost",
-    "http://localhost:3000",
-    "http://localhost:8080",
-]
-app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 detail=[]
 class Fun(Document):
@@ -167,26 +141,32 @@ def place():
 
 @app.post('/post')
 def details(patient: PatientsDetails):
-    # new_patient = Patients(
-    #     name=patient.name,
-    #     age=patient.age,
-    #     group=patient.group,
-    #     place=patient.place,
-    #     phone=patient.phone,
-    #     patient_id=patient.id,
-    # )
-    # new_patient.save()
+    new_patient = Patients(
+        name=patient.name,
+        age=patient.age,
+        group=patient.group,
+        place=patient.place,
+        phone=patient.phone,
+        patient_id=patient.id,
+    )
+    new_patient.save()
 
     val = dict()
     for j in patient:
         val[j[0]] = j[1]
     detail.append(val)
     return detail
-        
+def returndata(datas):
+    val = []
+    for i in datas:
+        val.append({'name':i.name,'age':i.age,'group':i.group,'place':i.place,'phone':i.phone,'id':i.patient_id})
+    print(val)
+    return val
 
 @app.get('/getData')
 def returnData():
-    return detail
+    datas = Patients.objects.all()
+    return returndata(datas)
 
 @app.get('/placeDetails')
 def place():
@@ -194,27 +174,20 @@ def place():
     for i in detail:
         if(i['place'] not in place):
             place.append(i['place'])
-    print("Hello")
     return place
 
 @app.post('/postData')
 def post(value : Filter):
-    data=[]
-    place,group = value.place,value.group
-    print(place,group)
-    for i in detail:
-        if(i['place']==place and i['group']==group):
-            data.append(i)
-    return data
+    datas = Patients.objects.filter(place=value.place,group=value.group)
+    return returndata(datas)
 
 
 @app.post('/check')
 def check(value : Check):
-    data,pin = value.id,value.pin
-    for i in range(len(detail)):
-        if(detail[i]['id']==pin):
-            del detail[i]
-            print(detail)
-            return JSONResponse(content=1,status_code=200)
-    return JSONResponse(content=1,status_code=201)
-
+    name,pin = value.id['name'],value.pin
+    val = Patients.objects.filter(name=name,patient_id=pin)
+    if(val):
+        val.delete()
+        return JSONResponse(content=1,status_code=200)
+    else:
+        return JSONResponse(content=1,status_code=201)
