@@ -133,11 +133,6 @@ def funn(val:Funed):
     obj.save()
     return 
 
-@app.get('/place')
-def place():
-    val = {'Tiruppur':'tioe','CBE':'Erode'}
-    return val
-
 
 @app.post('/post')
 def details(patient: PatientsDetails):
@@ -170,24 +165,40 @@ def returnData():
 
 @app.get('/placeDetails')
 def place():
-    place = []
-    for i in detail:
-        if(i['place'] not in place):
-            place.append(i['place'])
-    return place
+    # val = {"places":['Tiruppur','tioe','CBE','Erode']}
+    val =['TIRUPPUR','SALEM','CBE','ERODE']
+    return val
+
+@app.get('/groupDetails')
+def group():
+    val = ['A +ve','A -ve','B +ve','B -ve','O +ve','O -ve']
+    return val 
+
+# def place():
+#     place = []
+#     for i in detail:
+#         if(i['place'] not in place):
+#             place.append(i['place'])
+#     return place
 
 @app.post('/postData')
 def post(value : Filter):
     datas = Patients.objects.filter(place=value.place,group=value.group)
+    print(datas)
     return returndata(datas)
 
 
 @app.post('/check')
 def check(value : Check):
     name,pin = value.id['name'],value.pin
+    print(value.id)
+    res = {
+        "group": value.id['group'],
+        "place": value.id['place']
+    }
     val = Patients.objects.filter(name=name,patient_id=pin)
     if(val):
         val.delete()
-        return JSONResponse(content=1,status_code=200)
+        return JSONResponse(content=res,status_code=200)
     else:
         return JSONResponse(content=1,status_code=201)
